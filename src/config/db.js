@@ -8,17 +8,17 @@ export function createConnection(filename = process.env.DB_PATH ?? "cars.db") {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS cars (
-      id                  INTEGER PRIMARY KEY,
-      registration_number TEXT NOT NULL UNIQUE,
-      make                TEXT NOT NULL,
-      model               TEXT NOT NULL,
-      year                INTEGER NOT NULL,
-      mileage             INTEGER NOT NULL,
-      fuel                TEXT NOT NULL,
-      transmission        TEXT NOT NULL,
-      price               INTEGER NOT NULL,
-      status              TEXT NOT NULL DEFAULT 'available',
-      created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+    id                  INTEGER PRIMARY KEY,
+    registration_number TEXT NOT NULL UNIQUE,
+    make                TEXT NOT NULL,
+    model               TEXT NOT NULL,
+    year                INTEGER NOT NULL CHECK (year BETWEEN 1900 AND 2100),
+    mileage             INTEGER NOT NULL CHECK (mileage >= 0),
+    fuel                TEXT NOT NULL CHECK (fuel IN ('petrol', 'diesel', 'electric', 'hybrid')),
+    transmission        TEXT NOT NULL CHECK (transmission IN ('manual', 'automatic')),
+    price               INTEGER NOT NULL CHECK (price > 0),
+    status              TEXT NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'reserved', 'sold')),
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
 
