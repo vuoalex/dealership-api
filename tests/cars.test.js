@@ -98,9 +98,68 @@ describe("GET /api/cars/:id", () => {
     expect(response.body).toHaveProperty("error");
   });
 
-  it("returns 404 if given id isn't a number", async () => {
+  it("returns 404 if given id is not a number", async () => {
     const response = await request(app).get("/api/cars/not-a-number");
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe("POST /api/cars", () => {
+  it("creates a car and returns it with a generated id", async () => {
+    const response = await request(app).post("/api/cars").send(sampleCar);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      id: expect.any(Number),
+      registration_number: "ABC123",
+      make: "Volvo",
+      model: "V60",
+      year: 2019,
+      mileage: 8500,
+      fuel: "diesel",
+      transmission: "automatic",
+      price: 210000,
+      status: "available",
+      created_at: expect.any(String),
+    });
+  });
+
+  it("saves the created car to the database", async () => {
+    await request(app).post("/api/cars").send(sampleCar);
+
+    const response = await request(app).get("/api/cars");
+
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].registration_number).toBe("ABC123");
+  });
+
+  it("sets status to available when it is not provided", async () => {
+    const { status, ...carWithoutStatus } = sampleCar;
+
+    const response = await request(app)
+      .post("/api/cars")
+      .send(carWithoutStatus);
+
+    expect(response.status).toBe(201);
+    expect(response.body.status).toBe("available");
+  });
+
+  it("returns 400 when a required field is missing", async () => {
+    const { make, ...carWithoutMake } = sampleCar;
+
+    const response = await request(app).post("/api/cars").send(carWithoutMake);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("returns 409 when registration number already exists", async () => {
+    insertCar({ registration_number: "ABC123" });
+
+    const response = await request(app).post("/api/cars").send(sampleCar);
+
+    expect(response.status).toBe(409);
+    expect(response.body).toHaveProperty("error");
   });
 });
