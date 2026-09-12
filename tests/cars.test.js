@@ -76,3 +76,31 @@ describe("GET /api/cars", () => {
     });
   });
 });
+
+describe("GET /api/cars/:id", () => {
+  it("returns the car with the given id", async () => {
+    const created = insertCar({ registration_number: "XYZ789", make: "Audi" });
+
+    const response = await request(app).get(`/api/cars/${created.id}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      id: created.id,
+      registration_number: "XYZ789",
+      make: "Audi",
+    });
+  });
+
+  it("returns 404 when no car has the given id", async () => {
+    const response = await request(app).get("/api/cars/9999");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("returns 404 if given id isn't a number", async () => {
+    const response = await request(app).get("/api/cars/not-a-number");
+
+    expect(response.status).toBe(404);
+  });
+});
