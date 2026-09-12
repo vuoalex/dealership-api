@@ -12,6 +12,12 @@ const REQUIRED_FIELDS = [
   "price",
 ];
 
+const DEFAULT_STATUS = "available";
+
+function findMissingFields(data) {
+  return REQUIRED_FIELDS.filter((field) => data[field] === undefined);
+}
+
 export function getAllCars() {
   return db.prepare("SELECT * FROM cars").all();
 }
@@ -27,7 +33,7 @@ export function getCarById(id) {
 }
 
 export function createCar(data) {
-  const missing = REQUIRED_FIELDS.filter((field) => data[field] === undefined);
+  const missing = findMissingFields(data);
 
   if (missing.length > 0) {
     throw new AppError(`Missing required fields: ${missing.join(", ")}`, 400);
@@ -61,6 +67,6 @@ export function createCar(data) {
       fuel: data.fuel,
       transmission: data.transmission,
       price: data.price,
-      status: data.status ?? "available",
+      status: data.status ?? DEFAULT_STATUS,
     });
 }
