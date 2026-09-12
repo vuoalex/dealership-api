@@ -163,3 +163,86 @@ describe("POST /api/cars", () => {
     expect(response.body).toHaveProperty("error");
   });
 });
+
+describe("PUT /api/cars/:id", () => {
+  it("updates a car and returns the new version", async () => {
+    const created = insertCar();
+
+    const response = await request(app)
+      .put(`/api/cars/${created.id}`)
+      .send({ ...sampleCar, price: 195000, mileage: 9200, status: "reserved" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      id: created.id,
+      price: 195000,
+      mileage: 9200,
+      status: "reserved",
+    });
+  });
+
+  it("saves the changes to the database", async () => {
+    const created = insertCar();
+
+    await request(app)
+      .put(`/api/cars/${created.id}`)
+      .send({ ...sampleCar, price: 195000 });
+
+    const response = await request(app).get(`/api/cars/${created.id}`);
+
+    expect(response.body.price).toBe(195000);
+  });
+
+  it("can change the registration number", async () => {
+    const created = insertCar({ registration_number: "ABC123" });
+
+    const response = await request(app)
+      .put(`/api/cars/${created.id}`)
+      .send({ ...sampleCar, registration_number: "XYZ789" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.registration_number).toBe("XYZ789");
+  });
+
+  it("returns 404 when no car has the given id", async () => {
+    const response = await request(app).put("/api/cars/9999").send(sampleCar);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("returns 400 when a required field is missing", async () => {
+    const created = insertCar();
+    const { model, ...carWithoutModel } = sampleCar;
+
+    const response = await request(app)
+      .put(`/api/cars/${created.id}`)
+      .send(carWithoutModel);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("returns 409 when the registration number belongs to another car", async () => {
+    const first = insertCar({ registration_number: "ABC123" });
+    insertCar({ registration_number: "XYZ789" });
+
+    const response = await request(app)
+      .put(`/api/cars/${first.id}`)
+      .send({ ...sampleCar, registration_number: "XYZ789" });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("allows keeping the same registration number", async () => {
+    const created = insertCar({ registration_number: "ABC123" });
+
+    const response = await request(app)
+      .put(`/api/cars/${created.id}`)
+      .send({ ...sampleCar, price: 150000 });
+
+    expect(response.status).toBe(200);
+    expect(response.body.registration_number).toBe("ABC123");
+  });
+});
