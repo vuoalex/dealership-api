@@ -5,3 +5,9 @@ export function getCars(req, res) {
 
   res.json(cars);
 }
+
+export function getCar(req, res) {
+  const car = carService.getCarById(req.params.id);
+
+  res.json(car);
+}

@@ -4,5 +4,6 @@ import * as carController from "../controllers/carController.js";
 const router = Router();
 
 router.get("/", carController.getCars);
+router.get("/:id", carController.getCar);
 
 export default router;
