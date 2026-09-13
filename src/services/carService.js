@@ -123,3 +123,13 @@ export function updateCar(id, data) {
       status: data.status ?? DEFAULT_STATUS,
     });
 }
+
+export function deleteCar(id) {
+  const existing = db.prepare("SELECT id FROM cars WHERE id = ?").get(id);
+
+  if (!existing) {
+    throw new AppError("Car not found", 404);
+  }
+
+  db.prepare("DELETE FROM cars WHERE id = ?").run(id);
+}

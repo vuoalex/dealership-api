@@ -23,3 +23,9 @@ export function updateCar(req, res) {
 
   res.json(car);
 }
+
+export function deleteCar(req, res) {
+  carService.deleteCar(req.params.id);
+
+  res.sendStatus(204);
+}
