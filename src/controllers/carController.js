@@ -17,3 +17,9 @@ export function createCar(req, res) {
 
   res.status(201).json(car);
 }
+
+export function updateCar(req, res) {
+  const car = carService.updateCar(req.params.id, req.body);
+
+  res.json(car);
+}

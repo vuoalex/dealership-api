@@ -70,3 +70,56 @@ export function createCar(data) {
       status: data.status ?? DEFAULT_STATUS,
     });
 }
+
+export function updateCar(id, data) {
+  const existing = db.prepare("SELECT id FROM cars WHERE id = ?").get(id);
+
+  if (!existing) {
+    throw new AppError("Car not found", 404);
+  }
+
+  const missing = findMissingFields(data);
+
+  if (missing.length > 0) {
+    throw new AppError(`Missing required fields: ${missing.join(", ")}`, 400);
+  }
+
+  const duplicate = db
+    .prepare("SELECT id FROM cars WHERE registration_number = ? AND id != ?")
+    .get(data.registration_number, id);
+
+  if (duplicate) {
+    throw new AppError(
+      "A car with that registration number already exists",
+      409,
+    );
+  }
+
+  return db
+    .prepare(
+      `UPDATE cars SET
+        registration_number = @registration_number,
+        make = @make,
+        model = @model,
+        year = @year,
+        mileage = @mileage,
+        fuel = @fuel,
+        transmission = @transmission,
+        price = @price,
+        status = @status
+       WHERE id = @id
+       RETURNING *`,
+    )
+    .get({
+      id,
+      registration_number: data.registration_number,
+      make: data.make,
+      model: data.model,
+      year: data.year,
+      mileage: data.mileage,
+      fuel: data.fuel,
+      transmission: data.transmission,
+      price: data.price,
+      status: data.status ?? DEFAULT_STATUS,
+    });
+}

@@ -6,5 +6,6 @@ const router = Router();
 router.get("/", carController.getCars);
 router.get("/:id", carController.getCar);
 router.post("/", carController.createCar);
+router.put("/:id", carController.updateCar);
 
 export default router;
