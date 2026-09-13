@@ -29,3 +29,15 @@ export function deleteCar(req, res) {
 
   res.sendStatus(204);
 }
+
+export function getCarsByStatus(req, res) {
+  const cars = carService.getCarsByStatus(req.params.status);
+
+  res.json(cars);
+}
+
+export function getCarsByMake(req, res) {
+  const cars = carService.getCarsByMake(req.params.make);
+
+  res.json(cars);
+}

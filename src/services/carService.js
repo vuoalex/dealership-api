@@ -13,6 +13,7 @@ const REQUIRED_FIELDS = [
 ];
 
 const DEFAULT_STATUS = "available";
+const VALID_STATUSES = ["available", "reserved", "sold"];
 
 function findMissingFields(data) {
   return REQUIRED_FIELDS.filter((field) => data[field] === undefined);
@@ -132,4 +133,21 @@ export function deleteCar(id) {
   }
 
   db.prepare("DELETE FROM cars WHERE id = ?").run(id);
+}
+
+export function getCarsByStatus(status) {
+  if (!VALID_STATUSES.includes(status)) {
+    throw new AppError(
+      `Status must be one of: ${VALID_STATUSES.join(", ")}`,
+      400,
+    );
+  }
+
+  return db.prepare("SELECT * FROM cars WHERE status = ?").all(status);
+}
+
+export function getCarsByMake(make) {
+  return db
+    .prepare("SELECT * FROM cars WHERE make = ? COLLATE NOCASE")
+    .all(make);
 }
