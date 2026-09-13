@@ -42,7 +42,7 @@ describe("GET /api/cars", () => {
     const response = await request(app).get("/api/cars");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual([]);
+    expect(response.body.data).toEqual([]);
   });
 
   it("returns all cars in the database", async () => {
@@ -52,16 +52,17 @@ describe("GET /api/cars", () => {
     const response = await request(app).get("/api/cars");
 
     expect(response.status).toBe(200);
-    expect(response.body).toHaveLength(2);
-    expect(response.body.map((car) => car.make)).toEqual(["Volvo", "Toyota"]);
+    expect(response.body.data).toHaveLength(2);
+    expect(response.body.data.map((car) => car.make)).toEqual([
+      "Volvo",
+      "Toyota",
+    ]);
   });
 
   it("returns cars with the expected shape", async () => {
     insertCar();
 
-    const response = await request(app).get("/api/cars");
-
-    expect(response.body[0]).toMatchObject({
+    expect((await request(app).get("/api/cars")).body.data[0]).toMatchObject({
       id: expect.any(Number),
       registration_number: "ABC123",
       make: "Volvo",
@@ -130,8 +131,8 @@ describe("POST /api/cars", () => {
 
     const response = await request(app).get("/api/cars");
 
-    expect(response.body).toHaveLength(1);
-    expect(response.body[0].registration_number).toBe("ABC123");
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].registration_number).toBe("ABC123");
   });
 
   it("sets status to available when it is not provided", async () => {
@@ -275,8 +276,8 @@ describe("DELETE /api/cars/:id", () => {
 
     const response = await request(app).get("/api/cars");
 
-    expect(response.body).toHaveLength(1);
-    expect(response.body[0].registration_number).toBe("XYZ789");
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].registration_number).toBe("XYZ789");
   });
 
   it("returns 404 when no car has the given id", async () => {
@@ -345,5 +346,81 @@ describe("GET /api/cars/make/:make", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([]);
+  });
+});
+
+describe("Pagination", () => {
+  function insertCars(count) {
+    for (let i = 1; i <= count; i++) {
+      insertCar({ registration_number: `AAA${String(i).padStart(3, "0")}` });
+    }
+  }
+
+  it("includes pagination metadata", async () => {
+    insertCars(5);
+
+    const response = await request(app).get("/api/cars");
+
+    expect(response.body).toMatchObject({
+      page: 1,
+      limit: expect.any(Number),
+      total: 5,
+      totalPages: 1,
+    });
+  });
+
+  it("returns the number of cars given by limit", async () => {
+    insertCars(10);
+
+    const response = await request(app).get("/api/cars?limit=3");
+
+    expect(response.body.data).toHaveLength(3);
+    expect(response.body.limit).toBe(3);
+    expect(response.body.totalPages).toBe(4);
+  });
+
+  it("returns different cars on different pages", async () => {
+    insertCars(10);
+
+    const first = await request(app).get("/api/cars?limit=3&page=1");
+    const second = await request(app).get("/api/cars?limit=3&page=2");
+
+    const firstIds = first.body.data.map((car) => car.id);
+    const secondIds = second.body.data.map((car) => car.id);
+
+    expect(firstIds).not.toEqual(secondIds);
+    expect(firstIds.some((id) => secondIds.includes(id))).toBe(false);
+  });
+
+  it("returns an empty array for a page past the end", async () => {
+    insertCars(5);
+
+    const response = await request(app).get("/api/cars?page=99&limit=10");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual([]);
+  });
+
+  it("returns 400 when page is not a positive number", async () => {
+    const response = await request(app).get("/api/cars?page=0");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("returns 400 when limit is not a positive number", async () => {
+    const response = await request(app).get("/api/cars?limit=-5");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("returns 400 when limit is above the maximum", async () => {
+    insertCars(5);
+
+    const response = await request(app).get("/api/cars?limit=9999");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
   });
 });
