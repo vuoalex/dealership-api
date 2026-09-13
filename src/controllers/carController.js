@@ -1,9 +1,9 @@
 import * as carService from "../services/carService.js";
 
 export function getCars(req, res) {
-  const cars = carService.getAllCars();
+  const result = carService.getAllCars(req.query);
 
-  res.json(cars);
+  res.json(result);
 }
 
 export function getCar(req, res) {

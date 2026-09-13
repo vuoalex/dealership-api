@@ -15,12 +15,42 @@ const REQUIRED_FIELDS = [
 const DEFAULT_STATUS = "available";
 const VALID_STATUSES = ["available", "reserved", "sold"];
 
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 100;
+
 function findMissingFields(data) {
   return REQUIRED_FIELDS.filter((field) => data[field] === undefined);
 }
 
-export function getAllCars() {
-  return db.prepare("SELECT * FROM cars").all();
+export function getAllCars({ page = 1, limit = DEFAULT_LIMIT } = {}) {
+  const pageNumber = Number(page);
+  const pageSize = Number(limit);
+
+  if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+    throw new AppError("Page must be a positive whole number", 400);
+  }
+
+  if (!Number.isInteger(pageSize) || pageSize < 1) {
+    throw new AppError("Limit must be a positive whole number", 400);
+  }
+
+  if (pageSize > MAX_LIMIT) {
+    throw new AppError(`Limit cannot be higher than ${MAX_LIMIT}`, 400);
+  }
+
+  const { total } = db.prepare("SELECT COUNT(*) AS total FROM cars").get();
+
+  const cars = db
+    .prepare("SELECT * FROM cars LIMIT ? OFFSET ?")
+    .all(pageSize, (pageNumber - 1) * pageSize);
+
+  return {
+    data: cars,
+    page: pageNumber,
+    limit: pageSize,
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }
 
 export function getCarById(id) {
