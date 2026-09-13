@@ -286,3 +286,64 @@ describe("DELETE /api/cars/:id", () => {
     expect(response.body).toHaveProperty("error");
   });
 });
+
+describe("GET /api/cars/status/:status", () => {
+  it("returns only cars with the given status", async () => {
+    insertCar({ registration_number: "ABC123", status: "available" });
+    insertCar({ registration_number: "DEF456", status: "sold" });
+    insertCar({ registration_number: "GHI789", status: "available" });
+
+    const response = await request(app).get("/api/cars/status/available");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(2);
+    expect(response.body.every((car) => car.status === "available")).toBe(true);
+  });
+
+  it("returns an empty array when no car has that status", async () => {
+    insertCar({ status: "available" });
+
+    const response = await request(app).get("/api/cars/status/sold");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it("returns 400 for a status that does not exist", async () => {
+    const response = await request(app).get("/api/cars/status/purple");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  });
+});
+
+describe("GET /api/cars/make/:make", () => {
+  it("returns only cars of the given make", async () => {
+    insertCar({ registration_number: "ABC123", make: "Volvo" });
+    insertCar({ registration_number: "DEF456", make: "Toyota" });
+
+    const response = await request(app).get("/api/cars/make/Volvo");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].make).toBe("Volvo");
+  });
+
+  it("matches the make regardless of casing", async () => {
+    insertCar({ make: "Volvo" });
+
+    const response = await request(app).get("/api/cars/make/volvo");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(1);
+  });
+
+  it("returns an empty array for a make that is not in stock", async () => {
+    insertCar({ make: "Volvo" });
+
+    const response = await request(app).get("/api/cars/make/Ferrari");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+});
