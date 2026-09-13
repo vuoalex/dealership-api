@@ -246,3 +246,43 @@ describe("PUT /api/cars/:id", () => {
     expect(response.body.registration_number).toBe("ABC123");
   });
 });
+
+describe("DELETE /api/cars/:id", () => {
+  it("deletes the car and returns no content", async () => {
+    const created = insertCar();
+
+    const response = await request(app).delete(`/api/cars/${created.id}`);
+
+    expect(response.status).toBe(204);
+    expect(response.body).toEqual({});
+  });
+
+  it("removes the car from the database", async () => {
+    const created = insertCar();
+
+    await request(app).delete(`/api/cars/${created.id}`);
+
+    const response = await request(app).get(`/api/cars/${created.id}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("leaves other cars untouched", async () => {
+    const first = insertCar({ registration_number: "ABC123" });
+    insertCar({ registration_number: "XYZ789" });
+
+    await request(app).delete(`/api/cars/${first.id}`);
+
+    const response = await request(app).get("/api/cars");
+
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].registration_number).toBe("XYZ789");
+  });
+
+  it("returns 404 when no car has the given id", async () => {
+    const response = await request(app).delete("/api/cars/9999");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toHaveProperty("error");
+  });
+});
