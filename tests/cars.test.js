@@ -424,3 +424,131 @@ describe("Pagination", () => {
     expect(response.body).toHaveProperty("error");
   });
 });
+
+describe("Validation", () => {
+  function postCar(overrides) {
+    return request(app).post("/api/cars").send({ ...sampleCar, ...overrides });
+  }
+
+  describe("registration_number", () => {
+    it("accepts the ABC123 format", async () => {
+      const response = await postCar({ registration_number: "ABC123" });
+
+      expect(response.status).toBe(201);
+    });
+
+    it("returns 400 for a malformed registration number", async () => {
+      const response = await postCar({ registration_number: "AB-123" });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+
+    it("returns 400 when the registration number is not a string", async () => {
+      const response = await postCar({ registration_number: 123456 });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("year", () => {
+    it("returns 400 for a year before cars existed", async () => {
+      const response = await postCar({ year: 1800 });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 for a year too far in the future", async () => {
+      const response = await postCar({ year: 2200 });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 when year is not a whole number", async () => {
+      const response = await postCar({ year: 2019.5 });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("mileage and price", () => {
+    it("accepts zero mileage", async () => {
+      const response = await postCar({ mileage: 0 });
+
+      expect(response.status).toBe(201);
+    });
+
+    it("returns 400 for negative mileage", async () => {
+      const response = await postCar({ mileage: -100 });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 for a price of zero or less", async () => {
+      const response = await postCar({ price: 0 });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 when price is a string", async () => {
+      const response = await postCar({ price: "cheap" });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("fixed value fields", () => {
+    it("returns 400 for a fuel type that does not exist", async () => {
+      const response = await postCar({ fuel: "coal" });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 for a transmission that does not exist", async () => {
+      const response = await postCar({ transmission: "cvt" });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 for a status that does not exist", async () => {
+      const response = await postCar({ status: "pending" });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("sanitising", () => {
+    it("trims whitespace around text fields", async () => {
+      const response = await postCar({ make: "  Volvo  ", model: "  V60  " });
+
+      expect(response.status).toBe(201);
+      expect(response.body.make).toBe("Volvo");
+      expect(response.body.model).toBe("V60");
+    });
+
+    it("uppercases the registration number", async () => {
+      const response = await postCar({ registration_number: "abc123" });
+
+      expect(response.status).toBe(201);
+      expect(response.body.registration_number).toBe("ABC123");
+    });
+
+    it("ignores fields that are not columns", async () => {
+      const response = await postCar({ id: 999, hacked: true });
+
+      expect(response.status).toBe(201);
+      expect(response.body.id).not.toBe(999);
+      expect(response.body).not.toHaveProperty("hacked");
+    });
+
+    it("applies the same validation to PUT", async () => {
+      const created = insertCar();
+
+      const response = await request(app)
+        .put(`/api/cars/${created.id}`)
+        .send({ ...sampleCar, fuel: "coal" });
+
+      expect(response.status).toBe(400);
+    });
+  });
+});
