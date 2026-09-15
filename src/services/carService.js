@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { validateCar, VALID_STATUSES } from "../utils/validation.js";
 import { AppError } from "../utils/AppError.js";
 
 const REQUIRED_FIELDS = [
@@ -11,9 +12,6 @@ const REQUIRED_FIELDS = [
   "transmission",
   "price",
 ];
-
-const DEFAULT_STATUS = "available";
-const VALID_STATUSES = ["available", "reserved", "sold"];
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
@@ -70,9 +68,11 @@ export function createCar(data) {
     throw new AppError(`Missing required fields: ${missing.join(", ")}`, 400);
   }
 
+  const car = validateCar(data);
+
   const existing = db
     .prepare("SELECT id FROM cars WHERE registration_number = ?")
-    .get(data.registration_number);
+    .get(car.registration_number);
 
   if (existing) {
     throw new AppError(
@@ -89,17 +89,7 @@ export function createCar(data) {
         (@registration_number, @make, @model, @year, @mileage, @fuel, @transmission, @price, @status)
        RETURNING *`,
     )
-    .get({
-      registration_number: data.registration_number,
-      make: data.make,
-      model: data.model,
-      year: data.year,
-      mileage: data.mileage,
-      fuel: data.fuel,
-      transmission: data.transmission,
-      price: data.price,
-      status: data.status ?? DEFAULT_STATUS,
-    });
+    .get(car);
 }
 
 export function updateCar(id, data) {
@@ -115,9 +105,11 @@ export function updateCar(id, data) {
     throw new AppError(`Missing required fields: ${missing.join(", ")}`, 400);
   }
 
+  const car = validateCar(data);
+
   const duplicate = db
     .prepare("SELECT id FROM cars WHERE registration_number = ? AND id != ?")
-    .get(data.registration_number, id);
+    .get(car.registration_number, id);
 
   if (duplicate) {
     throw new AppError(
@@ -141,18 +133,7 @@ export function updateCar(id, data) {
        WHERE id = @id
        RETURNING *`,
     )
-    .get({
-      id,
-      registration_number: data.registration_number,
-      make: data.make,
-      model: data.model,
-      year: data.year,
-      mileage: data.mileage,
-      fuel: data.fuel,
-      transmission: data.transmission,
-      price: data.price,
-      status: data.status ?? DEFAULT_STATUS,
-    });
+    .get({ ...car, id });
 }
 
 export function deleteCar(id) {
