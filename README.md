@@ -103,20 +103,17 @@ Tests run against an in-memory database set by `vitest.config.js` and never touc
 ## Project structure
 
 ```
-src/
-├── config/        database connection, environment, OpenAPI definition
-├── controllers/   thin request handlers
-├── middleware/    centralised error handling
-├── routes/        route definitions and OpenAPI comments
-├── services/      business logic and database queries
-├── utils/         AppError, input validation
-├── app.js         the Express app, without listen
-└── server.js      starts the server
-scripts/
-└── seed.js        generates and inserts sample data
-tests/
+dealership-api/
+├── src/
+│   ├── config/        database connection, environment, OpenAPI definition
+│   ├── controllers/   thin request handlers
+│   ├── middleware/    centralised error handling
+│   ├── routes/        route definitions and OpenAPI comments
+│   ├── services/      business logic and database queries
+│   ├── utils/         AppError, input validation
+│   ├── app.js         the Express app, without listen
+│   └── server.js      starts the server
+├── scripts/
+│   └── seed.js        generates and inserts sample data
+└── tests/
 ```
-
-`app.js` and `server.js` are kept separate so Supertest can run the app in memory without binding a port.
-
-Errors are thrown as `AppError` from the service layer, carrying the status code they should produce. A single error handler, registered last in `app.js`, turns them into responses.
