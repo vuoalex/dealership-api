@@ -116,4 +116,5 @@ dealership-api/
 ├── scripts/
 │   └── seed.js        generates and inserts sample data
 └── tests/
+    └── cars.test.js   endpoint tests
 ```
